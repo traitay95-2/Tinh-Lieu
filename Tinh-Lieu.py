@@ -136,6 +136,7 @@ st.set_page_config(
 )
 
 st.title("🩺 Công Cụ Tính Liều Thuốc & Bút Tiêm Insulin")
+st.title("Miễn trừ trách nhiệm - Thông tin và kết quả chỉ để tham khảo. Thầy thuốc vui lòng kiểm tra lại trước khi chỉ định")
 st.markdown("---")
 
 
