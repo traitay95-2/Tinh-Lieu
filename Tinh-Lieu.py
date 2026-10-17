@@ -246,7 +246,7 @@ else:
         thuoc_bietduoc_dict,
     ) = load_excel_data_from_drive_or_file(uploaded_file.getvalue())
     st.sidebar.success("🎉 Đã cập nhật dữ liệu từ file đính kèm!")
-with st.expander("🔍 Danh sách file gần đây trên Google Drive", expanded=False):
+with st.expander("💊 Danh sách 5 thuốc mới cập nhật bấm để xem", expanded=False):
     try:
         service = get_drive_service()  # Đã khởi tạo service đúng cách
         results = (
