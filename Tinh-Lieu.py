@@ -251,12 +251,16 @@ danh_sach_thuoc = sorted(thuoc_dict.keys())
 
 # --- MENU CHỨC NĂNG ---
 try:
-    # Chạy thử: Lấy danh sách 10 file đầu tiên trên Drive
-    results = service.files().list(
-        pageSize=5, 
-        fields="nextPageToken, files(id, name)"
-    ).execute()
-    items = results.get('files', [])
+    # Lấy đối tượng kết nối Google Drive Service
+    service = get_drive_service()
+    
+    # Chạy thử: Lấy danh sách 5 file đầu tiên trên Drive
+    results = (
+        service.files()
+        .list(pageSize=5, fields="nextPageToken, files(id, name)")
+        .execute()
+    )
+    items = results.get("files", [])
 
     st.subheader("Danh sách file gần đây:")
     if not items:
