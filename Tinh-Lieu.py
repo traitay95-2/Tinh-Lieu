@@ -250,6 +250,23 @@ else:
 danh_sach_thuoc = sorted(thuoc_dict.keys())
 
 # --- MENU CHỨC NĂNG ---
+try:
+            # Chạy thử: Lấy danh sách 10 file đầu tiên trên Drive
+            results = service.files().list(
+                pageSize=5, 
+                fields="nextPageToken, files(id, name)"
+            ).execute()
+            items = results.get('files', [])
+        
+            st.subheader("Danh sách file gần đây:")
+            if not items:
+                st.write("Không tìm thấy file nào.")
+            else:
+                for item in items:
+                    st.write(f"📄 **{item['name']}** (`{item['id']}`)")
+        
+        except Exception as e:
+            st.error(f"❌ Lỗi kết nối Google Drive: {e}")
 if "menu_selection" not in st.session_state:
     st.session_state["menu_selection"] = "⚖️ Tính Liều Theo Cân Nặng"
 
@@ -306,24 +323,6 @@ if chon_tab == "⚖️ Tính Liều Theo Cân Nặng":
             step=0.1,
             format="%.1f",
         )
-        try:
-            # Chạy thử: Lấy danh sách 10 file đầu tiên trên Drive
-            results = service.files().list(
-                pageSize=5, 
-                fields="nextPageToken, files(id, name)"
-            ).execute()
-            items = results.get('files', [])
-        
-            st.subheader("Danh sách file gần đây:")
-            if not items:
-                st.write("Không tìm thấy file nào.")
-            else:
-                for item in items:
-                    st.write(f"📄 **{item['name']}** (`{item['id']}`)")
-        
-        except Exception as e:
-            st.error(f"❌ Lỗi kết nối Google Drive: {e}")
-
     with col2:
         st.subheader("📋 Kết quả đề nghị")
 
