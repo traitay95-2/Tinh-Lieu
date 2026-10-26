@@ -6,4 +6,4 @@ google-auth-oauthlib
 gspread
 pandas
 openpyxl
-python-3.11
+3.11
