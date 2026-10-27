@@ -252,7 +252,9 @@ with st.expander("💊 Danh sách 5 thuốc mới cập nhật bấm để xem",
         results = (
             service.files()
             .list(
+                q=f"'{FOLDER_ID}' in parents and mimeType = 'application/pdf' and trashed = false",
                 pageSize=5,
+                orderBy="createdTime desc",
                 fields="nextPageToken, files(id, name, webViewLink)",
             )
             .execute()
@@ -260,7 +262,7 @@ with st.expander("💊 Danh sách 5 thuốc mới cập nhật bấm để xem",
         items = results.get("files", [])
 
         if not items:
-            st.write("Không tìm thấy file nào.")
+            st.write("Không tìm thấy file PDF nào.")
         else:
             for item in items:
                 link = item.get("webViewLink", "#")
