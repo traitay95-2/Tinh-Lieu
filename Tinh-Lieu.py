@@ -9,6 +9,20 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 import streamlit as st
+import os
+import psutil
+
+# --- HIỂN THỊ TÀI NGUYÊN HỆ THỐNG TRÊN SIDEBAR ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Tài nguyên Server")
+
+# Lấy thông tin tiến trình hiện tại của Python
+process = psutil.Process(os.getpid())
+ram_usage_mb = process.memory_info().rss / (1024 * 1024)  # Đổi sang MB
+cpu_usage_pct = process.cpu_percent(interval=0.1)
+
+st.sidebar.metric(label="RAM đang dùng", value=f"{ram_usage_mb:.1f} MB")
+st.sidebar.metric(label="CPU đang dùng", value=f"{cpu_usage_pct:.1f}%")
 
 # ==============================================================================
 # CẤU HÌNH GOOGLE DRIVE & DATABASE
