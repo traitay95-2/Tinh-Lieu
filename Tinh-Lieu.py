@@ -586,10 +586,8 @@ elif chon_tab == "🖊️ Tính Số Lượng Bút Insulin Theo Ngày Kê":
             )
         else:
             st.info("Vui lòng nhập liều tiêm sáng hoặc chiều để tính toán.")
-
-
 # ==============================================================================
-# CHỨC NĂNG 3: TRANG THÊM/CẬP NHẬT HOẠT CHẤT & BIỆT DƯỢC
+# CHỨC NĂNG 3: TRANG THÊM/CẬP NHẬT HOẠT CHẤT & BIỆT DƯỢC (CÓ NÚT XÓA HẲN THUỐC)
 # ==============================================================================
 elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
     st.subheader("🔒 Đăng nhập hệ thống quản lý")
@@ -615,10 +613,9 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
             st.rerun()
 
         st.markdown("---")
-        st.subheader("➕ Thêm mới / Cập nhật Thuốc & Biệt dược")
+        st.subheader("➕ Thêm mới / Cập nhật hoặc Xóa Thuốc")
 
         def reset_biet_duoc_widgets():
-            """Xóa toàn bộ widget state cũ của tên biệt dược và uploader PDF."""
             keys_to_delete = [
                 k
                 for k in st.session_state.keys()
@@ -647,12 +644,10 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
             "1. Chọn Hoạt chất đã có từ dữ liệu (hoặc chọn nhập mới): *",
             options=options_list,
             index=0,
-            help="Chọn thuốc cũ để chỉnh sửa dữ liệu, hoặc chọn '[ ➕ Nhập tên Hoạt chất mới... ]' để tạo thuốc mới.",
         )
 
         final_hoat_chat_name = ""
 
-        # Xử lý chuyển đổi giữa thuốc mới và cũ
         if selected_option == CREATE_NEW_OPTION:
             final_hoat_chat_name = st.text_input(
                 "👉 Nhập Tên Hoạt chất chính thức mới *: ",
@@ -702,28 +697,15 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                     new_list = [{"id": 0, "ten": "", "link": ""}]
                 st.session_state["edit_biet_duoc_list"] = new_list
 
-        if final_hoat_chat_name and selected_option != CREATE_NEW_OPTION:
-            st.info(
-                f"🔄 Đang chỉnh sửa dữ liệu cũ của: **{final_hoat_chat_name}**"
-            )
-        elif final_hoat_chat_name:
-            st.success(
-                f"✨ Đang tạo mới dữ liệu cho: **{final_hoat_chat_name}**"
-            )
-
         lieu_dung_input = st.text_input(
             "2. Quy định liều dùng (cách nhau bởi dấu ';') *: ",
             key="edit_lieu_dung",
-            placeholder="Ví dụ: 10 mg/kg/ngày; 15 mg/kg/ngày",
         )
         quy_cach_input = st.text_input(
             "3. Quy cách hàm lượng (cách nhau bởi dấu ';'):",
             key="edit_quy_cach",
-            placeholder="Ví dụ: 80; 150; 250; 500",
         )
-        chi_dinh_input = st.text_area(
-            "4. Chỉ định:", key="edit_chi_dinh", height=80
-        )
+        chi_dinh_input = st.text_area("4. Chỉ định:", key="edit_chi_dinh", height=80)
         chong_chi_dinh_input = st.text_area(
             "5. Chống chỉ định:", key="edit_chong_chi_dinh", height=80
         )
@@ -746,60 +728,6 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                 {"id": max_id, "ten": "", "link": ""}
             )
 
-        def remove_and_sync_db(row_id):
-            """Xóa dòng biệt dược, xóa file PDF trên Drive và cập nhật thẳng SQLite/Drive."""
-            target_item = None
-            for item in st.session_state["edit_biet_duoc_list"]:
-                if item["id"] == row_id:
-                    target_item = item
-                    break
-
-            if not target_item:
-                return
-
-            with st.spinner("Đang xóa biệt dược và đồng bộ dữ liệu..."):
-                if target_item.get("link"):
-                    delete_file_from_drive(target_item["link"])
-
-                st.session_state["edit_biet_duoc_list"] = [
-                    item
-                    for item in st.session_state["edit_biet_duoc_list"]
-                    if item["id"] != row_id
-                ]
-                if not st.session_state["edit_biet_duoc_list"]:
-                    st.session_state["edit_biet_duoc_list"] = [
-                        {"id": 0, "ten": "", "link": ""}
-                    ]
-
-                if f"bd_ten_{row_id}" in st.session_state:
-                    del st.session_state[f"bd_ten_{row_id}"]
-                if f"bd_pdf_{row_id}" in st.session_state:
-                    del st.session_state[f"bd_pdf_{row_id}"]
-
-                updated_bd_data = []
-                for item in st.session_state["edit_biet_duoc_list"]:
-                    t_name = item.get("ten", "").strip()
-                    if t_name:
-                        updated_bd_data.append(
-                            {"ten": t_name, "link": item.get("link", "")}
-                        )
-
-                hoat_chat_name = final_hoat_chat_name.strip()
-                if hoat_chat_name and selected_option != CREATE_NEW_OPTION:
-                    save_or_update_thuoc_db(
-                        hoat_chat_name,
-                        lieu_dung_input.strip(),
-                        quy_cach_input.strip(),
-                        chi_dinh_input.strip(),
-                        chong_chi_dinh_input.strip(),
-                        updated_bd_data,
-                    )
-                    st.cache_data.clear()
-
-            st.toast("🗑️ Đã xóa biệt dược và đồng bộ Database!")
-            st.rerun()
-
-        # Hiển thị danh sách biệt dược
         updated_biet_duoc_list = []
         for idx, item in enumerate(st.session_state["edit_biet_duoc_list"]):
             row_id = item["id"]
@@ -810,29 +738,26 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                 st.session_state[widget_key] = item.get("ten", "")
 
             with c1:
-                bd_ten = st.text_input(
-                    f"Tên biệt dược #{idx+1}",
-                    key=widget_key,
-                    placeholder="Ví dụ: Efferalgan 500mg",
-                )
-
+                bd_ten = st.text_input(f"Tên biệt dược #{idx+1}", key=widget_key)
             with c2:
                 pdf_file = st.file_uploader(
-                    f"Tải lên file PDF minh chứng (#{idx+1})",
-                    type=["pdf"],
-                    key=f"bd_pdf_{row_id}",
+                    f"Tải lên PDF (#{idx+1})", type=["pdf"], key=f"bd_pdf_{row_id}"
                 )
                 existing_link = item.get("link", "")
                 if existing_link:
-                    st.caption(
-                        f"🔗 [File PDF đã có trên Drive]({existing_link})"
-                    )
-
+                    st.caption(f"🔗 [Đã có trên Drive]({existing_link})")
             with c3:
                 st.write("")
                 st.write("")
-                if st.button("❌ Xóa", key=f"btn_del_{row_id}"):
-                    remove_and_sync_db(row_id)
+                if st.button("❌ Xóa dòng", key=f"btn_del_row_{row_id}"):
+                    if existing_link:
+                        delete_file_from_drive(existing_link)
+                    st.session_state["edit_biet_duoc_list"] = [
+                        it
+                        for it in st.session_state["edit_biet_duoc_list"]
+                        if it["id"] != row_id
+                    ]
+                    st.rerun()
 
             updated_biet_duoc_list.append({
                 "id": row_id,
@@ -847,78 +772,62 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
 
         st.markdown("---")
 
-        # 1. Nút Lưu thay đổi
-        if st.button("💾 Lưu Toàn Bộ Dữ Liệu Lên SQLite & Google Drive", type="primary", use_container_width=True):
-            hoat_chat_final = final_hoat_chat_name.strip()
-
-            if not hoat_chat_final:
-                st.error("❌ Vui lòng nhập Tên Hoạt chất chính thức!")
-            elif not lieu_dung_input.strip():
-                st.error("❌ Vui lòng nhập Quy định liều dùng!")
-            else:
-                with st.spinner("Đang xử lý tải file PDF và lưu vào Database..."):
-                    old_bd_list = thuoc_bietduoc_dict.get(hoat_chat_final, [])
-                    old_bd_map = {
-                        b.get("ten", "").strip().lower(): b.get("link", "")
-                        for b in old_bd_list
-                        if b.get("ten")
-                    }
-
-                    final_bd_json_data = []
-
-                    for bd_item in updated_biet_duoc_list:
-                        ten_bd_str = bd_item["ten"].strip()
-                        if not ten_bd_str:
-                            continue
-
-                        ten_bd_lower = ten_bd_str.lower()
-                        pdf_uploaded = bd_item["pdf_file"]
-                        link_to_use = bd_item["link"]
-
-                        if pdf_uploaded is not None:
-                            if ten_bd_lower in old_bd_map and old_bd_map[ten_bd_lower]:
-                                old_pdf_link = old_bd_map[ten_bd_lower]
-                                delete_file_from_drive(old_pdf_link)
-
-                            _, new_link = upload_pdf_to_drive(pdf_uploaded)
-                            if new_link:
-                                link_to_use = new_link
-
-                        final_bd_json_data.append({
-                            "ten": ten_bd_str,
-                            "link": link_to_use,
-                        })
-
-                    # Lưu vào SQLite và đồng bộ ngay lên Drive
-                    save_or_update_thuoc_db(
-                        hoat_chat_final,
-                        lieu_dung_input.strip(),
-                        quy_cach_input.strip(),
-                        chi_dinh_input.strip(),
-                        chong_chi_dinh_input.strip(),
-                        final_bd_json_data,
+        col_save, col_del_all = st.columns([2, 1])
+        with col_save:
+            if st.button("💾 Lưu Cập Nhật Thuốc Này", type="primary"):
+                hoat_chat_final = final_hoat_chat_name.strip()
+                if not hoat_chat_final or not lieu_dung_input.strip():
+                    st.error(
+                        "❌ Vui lòng nhập Tên Hoạt chất và Quy định liều dùng!"
                     )
-                    st.cache_data.clear()
+                else:
+                    with st.spinner("Đang lưu vào Database..."):
+                        final_bd_json_data = []
+                        for bd_item in updated_biet_duoc_list:
+                            t_str = bd_item["ten"].strip()
+                            if not t_str:
+                                continue
+                            lnk = bd_item["link"]
+                            if bd_item["pdf_file"] is not None:
+                                _, new_lnk = upload_pdf_to_drive(
+                                    bd_item["pdf_file"]
+                                )
+                                if new_lnk:
+                                    lnk = new_lnk
+                            final_bd_json_data.append(
+                                {"ten": t_str, "link": lnk}
+                            )
 
-                    st.toast(
-                        f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** vào Database!",
-                        icon="✅",
-                    )
-                    st.rerun()
+                        save_or_update_thuoc_db(
+                            hoat_chat_final,
+                            lieu_dung_input.strip(),
+                            quy_cach_input.strip(),
+                            chi_dinh_input.strip(),
+                            chong_chi_dinh_input.strip(),
+                            final_bd_json_data,
+                        )
+                        st.cache_data.clear()
+                        st.success(
+                            f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}**!"
+                        )
+                        st.rerun()
 
-        # 2. Nút Xóa hẳn thuốc (Chỉ hiện khi chọn thuốc cũ, không hiện khi chọn tạo mới)
-        if selected_option != CREATE_NEW_OPTION:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🗑️ XÓA HẲN THUỐC NÀY KHỎI DATABASE", type="secondary", use_container_width=True):
-                with st.spinner(f"Đang xóa hoàn toàn thuốc {selected_option}..."):
-                    # Xóa các file PDF liên quan trên Drive trước
-                    old_list = thuoc_bietduoc_dict.get(selected_option, [])
-                    for b in old_list:
-                        if b.get("link"):
-                            delete_file_from_drive(b["link"])
-                    
-                    # Xóa khỏi SQLite Database
-                    delete_thuoc_from_db(selected_option)
-                    st.cache_data.clear()
-                    st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
-                    st.rerun()
+        with col_del_all:
+            if selected_option != CREATE_NEW_OPTION:
+                if st.button(
+                    "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
+                ):
+                    with st.spinner(
+                        f"Đang xóa hoàn toàn thuốc {selected_option}..."
+                    ):
+                        # Xóa các file PDF liên quan trên Drive trước
+                        old_list = thuoc_bietduoc_dict.get(selected_option, [])
+                        for b in old_list:
+                            if b.get("link"):
+                                delete_file_from_drive(b["link"])
+                        # Xóa khỏi SQLite Database
+                        delete_thuoc_from_db(selected_option)
+                        st.cache_data.clear()
+                        st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
+                        st.rerun()
+
