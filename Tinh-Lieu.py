@@ -847,87 +847,78 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
 
         st.markdown("---")
 
-        # Chia 2 cột: Cột trái nút Lưu, Cột phải nút Xóa hẳn thuốc
-        col_save, col_del_all = st.columns([2, 1])
+        # 1. Nút Lưu thay đổi
+        if st.button("💾 Lưu Toàn Bộ Dữ Liệu Lên SQLite & Google Drive", type="primary", use_container_width=True):
+            hoat_chat_final = final_hoat_chat_name.strip()
 
-        with col_save:
-            if st.button("💾 Lưu Toàn Bộ Dữ Liệu Lên SQLite & Google Drive", type="primary"):
-                hoat_chat_final = final_hoat_chat_name.strip()
+            if not hoat_chat_final:
+                st.error("❌ Vui lòng nhập Tên Hoạt chất chính thức!")
+            elif not lieu_dung_input.strip():
+                st.error("❌ Vui lòng nhập Quy định liều dùng!")
+            else:
+                with st.spinner("Đang xử lý tải file PDF và lưu vào Database..."):
+                    old_bd_list = thuoc_bietduoc_dict.get(hoat_chat_final, [])
+                    old_bd_map = {
+                        b.get("ten", "").strip().lower(): b.get("link", "")
+                        for b in old_bd_list
+                        if b.get("ten")
+                    }
 
-                if not hoat_chat_final:
-                    st.error("❌ Vui lòng nhập Tên Hoạt chất chính thức!")
-                elif not lieu_dung_input.strip():
-                    st.error("❌ Vui lòng nhập Quy định liều dùng!")
-                else:
-                    with st.spinner("Đang xử lý tải file PDF và lưu vào Database..."):
-                        old_bd_list = thuoc_bietduoc_dict.get(
-                            hoat_chat_final, []
-                        )
-                        old_bd_map = {
-                            b.get("ten", "").strip().lower(): b.get("link", "")
-                            for b in old_bd_list
-                            if b.get("ten")
-                        }
+                    final_bd_json_data = []
 
-                        final_bd_json_data = []
+                    for bd_item in updated_biet_duoc_list:
+                        ten_bd_str = bd_item["ten"].strip()
+                        if not ten_bd_str:
+                            continue
 
-                        for bd_item in updated_biet_duoc_list:
-                            ten_bd_str = bd_item["ten"].strip()
-                            if not ten_bd_str:
-                                continue
+                        ten_bd_lower = ten_bd_str.lower()
+                        pdf_uploaded = bd_item["pdf_file"]
+                        link_to_use = bd_item["link"]
 
-                            ten_bd_lower = ten_bd_str.lower()
-                            pdf_uploaded = bd_item["pdf_file"]
-                            link_to_use = bd_item["link"]
+                        if pdf_uploaded is not None:
+                            if ten_bd_lower in old_bd_map and old_bd_map[ten_bd_lower]:
+                                old_pdf_link = old_bd_map[ten_bd_lower]
+                                delete_file_from_drive(old_pdf_link)
 
-                            if pdf_uploaded is not None:
-                                if (
-                                    ten_bd_lower in old_bd_map
-                                    and old_bd_map[ten_bd_lower]
-                                ):
-                                    old_pdf_link = old_bd_map[ten_bd_lower]
-                                    delete_file_from_drive(old_pdf_link)
+                            _, new_link = upload_pdf_to_drive(pdf_uploaded)
+                            if new_link:
+                                link_to_use = new_link
 
-                                _, new_link = upload_pdf_to_drive(pdf_uploaded)
-                                if new_link:
-                                    link_to_use = new_link
+                        final_bd_json_data.append({
+                            "ten": ten_bd_str,
+                            "link": link_to_use,
+                        })
 
-                            final_bd_json_data.append({
-                                "ten": ten_bd_str,
-                                "link": link_to_use,
-                            })
+                    # Lưu vào SQLite và đồng bộ ngay lên Drive
+                    save_or_update_thuoc_db(
+                        hoat_chat_final,
+                        lieu_dung_input.strip(),
+                        quy_cach_input.strip(),
+                        chi_dinh_input.strip(),
+                        chong_chi_dinh_input.strip(),
+                        final_bd_json_data,
+                    )
+                    st.cache_data.clear()
 
-                        # Lưu vào SQLite và đồng bộ ngay lên Drive
-                        save_or_update_thuoc_db(
-                            hoat_chat_final,
-                            lieu_dung_input.strip(),
-                            quy_cach_input.strip(),
-                            chi_dinh_input.strip(),
-                            chong_chi_dinh_input.strip(),
-                            final_bd_json_data,
-                        )
-                        st.cache_data.clear()
+                    st.toast(
+                        f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** vào Database!",
+                        icon="✅",
+                    )
+                    st.rerun()
 
-                        st.toast(
-                            f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** vào Database!",
-                            icon="✅",
-                        )
-                        st.rerun()
-
-        with col_del_all:
-            # Chỉ hiển thị nút xóa nếu đang chọn một thuốc cũ có sẵn (không phải đang tạo mới)
-            if selected_option != CREATE_NEW_OPTION:
-                if st.button(
-                    "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
-                ):
-                    with st.spinner(f"Đang xóa hoàn toàn thuốc {selected_option}..."):
-                        # Xóa các file PDF liên quan trên Drive trước
-                        old_list = thuoc_bietduoc_dict.get(selected_option, [])
-                        for b in old_list:
-                            if b.get("link"):
-                                delete_file_from_drive(b["link"])
-                        # Xóa khỏi SQLite Database
-                        delete_thuoc_from_db(selected_option)
-                        st.cache_data.clear()
-                        st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
-                        st.rerun()
+        # 2. Nút Xóa hẳn thuốc (Chỉ hiện khi chọn thuốc cũ, không hiện khi chọn tạo mới)
+        if selected_option != CREATE_NEW_OPTION:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🗑️ XÓA HẲN THUỐC NÀY KHỎI DATABASE", type="secondary", use_container_width=True):
+                with st.spinner(f"Đang xóa hoàn toàn thuốc {selected_option}..."):
+                    # Xóa các file PDF liên quan trên Drive trước
+                    old_list = thuoc_bietduoc_dict.get(selected_option, [])
+                    for b in old_list:
+                        if b.get("link"):
+                            delete_file_from_drive(b["link"])
+                    
+                    # Xóa khỏi SQLite Database
+                    delete_thuoc_from_db(selected_option)
+                    st.cache_data.clear()
+                    st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
+                    st.rerun()
