@@ -123,6 +123,14 @@ def upload_pdf_to_drive(uploaded_file):
     except Exception as e:
         st.error(f"Lỗi Upload PDF lên Drive: {e}")
         return None, None
+def delete_thuoc_from_db(hoat_chat_name):
+    """Xóa hoàn toàn 1 dòng thuốc khỏi SQLite Database."""
+    conn = sqlite3.connect(LOCAL_DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM danh_sach_thuoc WHERE hoat_chat = ?", (hoat_chat_name,))
+    conn.commit()
+    conn.close()
+    sync_db_to_drive()
 
 
 # ==============================================================================
@@ -902,3 +910,21 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         icon="✅",
                     )
                     st.rerun()
+            with col_del_all:
+            if selected_option != CREATE_NEW_OPTION:
+                if st.button(
+                    "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
+                ):
+                    with st.spinner(
+                        f"Đang xóa hoàn toàn thuốc {selected_option}..."
+                    ):
+                        # Xóa các file PDF liên quan trên Drive trước
+                        old_list = thuoc_bietduoc_dict.get(selected_option, [])
+                        for b in old_list:
+                            if b.get("link"):
+                                delete_file_from_drive(b["link"])
+                        # Xóa khỏi SQLite Database
+                        delete_thuoc_from_db(selected_option)
+                        st.cache_data.clear()
+                        st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
+                        st.rerun()
