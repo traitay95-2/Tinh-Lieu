@@ -49,8 +49,6 @@ def search_file_in_folder(service, filename, folder_id):
     if items:
         return items[0]["id"]
     return None
-
-
 def extract_file_id_from_link(link):
     """Trích xuất file_id từ URL Google Drive link."""
     if not link:
@@ -165,6 +163,7 @@ def load_excel_data_from_drive_or_file(uploaded_file_bytes=None):
                     while not done:
                         _, done = downloader.next_chunk()
                     file_stream.seek(0)
+                    file_stream.close()
 
         if file_stream is None:
             return {}, {}, {}, {}, {}
@@ -732,7 +731,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         file_stream.seek(0)
                         wb = load_workbook(file_stream)
                         ws = wb.active
-
+                        file_stream.close()
                         for r in range(1, ws.max_row + 1):
                             cell_val = ws.cell(row=r, column=1).value
                             if (
@@ -873,7 +872,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                             wb = openpyxl.Workbook()
 
                         ws = wb.active
-
+                        file_stream.close()
                         row_found = None
                         for r in range(1, ws.max_row + 1):
                             cell_val = ws.cell(row=r, column=1).value
