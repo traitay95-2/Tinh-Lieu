@@ -772,62 +772,82 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
 
         st.markdown("---")
 
-        col_save, col_del_all = st.columns([2, 1])
-        with col_save:
-            if st.button("💾 Lưu Cập Nhật Thuốc Này", type="primary"):
-                hoat_chat_final = final_hoat_chat_name.strip()
-                if not hoat_chat_final or not lieu_dung_input.strip():
-                    st.error(
-                        "❌ Vui lòng nhập Tên Hoạt chất và Quy định liều dùng!"
+        # 1. Nút Lưu thay đổi
+        if st.button("💾 Lưu Toàn Bộ Dữ Liệu Lên SQLite & Google Drive", type="primary", use_container_width=True):
+            hoat_chat_final = final_hoat_chat_name.strip()
+
+            if not hoat_chat_final:
+                st.error("❌ Vui lòng nhập Tên Hoạt chất chính thức!")
+            elif not lieu_dung_input.strip():
+                st.error("❌ Vui lòng nhập Quy định liều dùng!")
+            else:
+                with st.spinner("Đang xử lý tải file PDF và lưu vào Database..."):
+                    old_bd_list = thuoc_bietduoc_dict.get(hoat_chat_final, [])
+                    old_bd_map = {
+                        b.get("ten", "").strip().lower(): b.get("link", "")
+                        for b in old_bd_list
+                        if b.get("ten")
+                    }
+
+                    final_bd_json_data = []
+
+                    for bd_item in updated_biet_duoc_list:
+                        ten_bd_str = bd_item["ten"].strip()
+                        if not ten_bd_str:
+                            continue
+
+                        ten_bd_lower = ten_bd_str.lower()
+                        pdf_uploaded = bd_item["pdf_file"]
+                        link_to_use = bd_item["link"]
+
+                        if pdf_uploaded is not None:
+                            if ten_bd_lower in old_bd_map and old_bd_map[ten_bd_lower]:
+                                old_pdf_link = old_bd_map[ten_bd_lower]
+                                delete_file_from_drive(old_pdf_link)
+
+                            _, new_link = upload_pdf_to_drive(pdf_uploaded)
+                            if new_link:
+                                link_to_use = new_link
+
+                        final_bd_json_data.append({
+                            "ten": ten_bd_str,
+                            "link": link_to_use,
+                        })
+
+                    # Lưu vào SQLite và đồng bộ ngay lên Drive
+                    save_or_update_thuoc_db(
+                        hoat_chat_final,
+                        lieu_dung_input.strip(),
+                        quy_cach_input.strip(),
+                        chi_dinh_input.strip(),
+                        chong_chi_dinh_input.strip(),
+                        final_bd_json_data,
                     )
-                else:
-                    with st.spinner("Đang lưu vào Database..."):
-                        final_bd_json_data = []
-                        for bd_item in updated_biet_duoc_list:
-                            t_str = bd_item["ten"].strip()
-                            if not t_str:
-                                continue
-                            lnk = bd_item["link"]
-                            if bd_item["pdf_file"] is not None:
-                                _, new_lnk = upload_pdf_to_drive(
-                                    bd_item["pdf_file"]
-                                )
-                                if new_lnk:
-                                    lnk = new_lnk
-                            final_bd_json_data.append(
-                                {"ten": t_str, "link": lnk}
-                            )
+                    st.cache_data.clear()
 
-                        save_or_update_thuoc_db(
-                            hoat_chat_final,
-                            lieu_dung_input.strip(),
-                            quy_cach_input.strip(),
-                            chi_dinh_input.strip(),
-                            chong_chi_dinh_input.strip(),
-                            final_bd_json_data,
-                        )
-                        st.cache_data.clear()
-                        st.success(
-                            f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}**!"
-                        )
-                        st.rerun()
+                    st.toast(
+                        f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** vào Database!",
+                        icon="✅",
+                    )
+                    st.rerun()
 
-        with col_del_all:
-            if selected_option != CREATE_NEW_OPTION:
-                if st.button(
-                    "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
-                ):
-                    with st.spinner(
-                        f"Đang xóa hoàn toàn thuốc {selected_option}..."
-                    ):
-                        # Xóa các file PDF liên quan trên Drive trước
-                        old_list = thuoc_bietduoc_dict.get(selected_option, [])
-                        for b in old_list:
-                            if b.get("link"):
-                                delete_file_from_drive(b["link"])
-                        # Xóa khỏi SQLite Database
-                        delete_thuoc_from_db(selected_option)
-                        st.cache_data.clear()
-                        st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
-                        st.rerun()
+        st.markdown("<br>", unsafe_allow_html=True)
 
+        # 2. Nút Xóa hẳn thuốc (Hiển thị luôn để test)
+        if st.button("🗑️ XÓA HẲN THUỐC ĐANG CHỌN KHỎI DATABASE", type="secondary", use_container_width=True):
+            target_thuoc = final_hoat_chat_name.strip()
+            if not target_thuoc or target_thuoc == "[ ➕ Nhập tên Hoạt chất mới... ]":
+                st.warning("⚠️ Vui lòng chọn một thuốc cụ thể ở trên để xóa!")
+            else:
+                with st.spinner(f"Đang xóa hoàn toàn thuốc {target_thuoc}..."):
+                    # Xóa các file PDF liên quan trên Drive trước
+                    old_list = thuoc_bietduoc_dict.get(target_thuoc, [])
+                    for b in old_list:
+                        if b.get("link"):
+                            delete_file_from_drive(b["link"])
+                    
+                    # Xóa khỏi SQLite Database
+                    delete_thuoc_from_db(target_thuoc)
+                    st.cache_data.clear()
+                    st.success(f"Đã xóa hoàn toàn thuốc **{target_thuoc}**!")
+                    st.rerun()
