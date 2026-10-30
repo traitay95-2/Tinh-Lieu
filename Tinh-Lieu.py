@@ -11,6 +11,7 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBa
 import streamlit as st
 import os
 import psutil
+import time
 
 # --- HIỂN THỊ TÀI NGUYÊN HỆ THỐNG TRÊN SIDEBAR ---
 st.sidebar.markdown("---")
@@ -309,10 +310,26 @@ st.markdown("---")
 
 # Sidebar quản lý
 st.sidebar.header("⚙️ Quản lý Dữ liệu")
-if st.sidebar.button("🔄 Tải lại dữ liệu từ Google Drive"):
-    download_db_from_drive()
-    st.cache_data.clear()
-    st.rerun()
+
+# Khởi tạo biến lưu thời gian bấm nút trong session_state
+if "last_reload_time" not in st.session_state:
+    st.session_state["last_reload_time"] = 0.0
+
+current_time = time.time()
+time_diff = current_time - st.session_state["last_reload_time"]
+cooldown = 10.0  # Số giây delay
+
+if time_diff < cooldown:
+    remaining = int(cooldown - time_diff) + 1
+    st.sidebar.warning(f"⏳ Vui lòng đợi {remaining}s để bấm lại.")
+    # Tạo nút giả lập dạng disabled hoặc không cho thực thi khi đang trong thời gian chờ
+    st.sidebar.button("🔄 Tải lại dữ liệu từ Google Drive", disabled=True)
+else:
+    if st.sidebar.button("🔄 Tải lại dữ liệu từ Google Drive"):
+        st.session_state["last_reload_time"] = time.time()
+        download_db_from_drive()
+        st.cache_data.clear()
+        st.rerun()
 
 if thuoc_dict:
     st.sidebar.success("✅ Đang kết nối SQLite Database thành công.")
