@@ -920,9 +920,8 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         save_excel_to_drive(service, wb)
 
                         st.cache_data.clear()
-                        st.success(
-                            f"🎉 Đã lưu và cập nhật thành công thuốc **{hoat_chat_final}** lên Google Drive!"
-                        )
+                        st.toast(f"🎉 Đã lưu và cập nhật thành công thuốc **{hoat_chat_final}** lên Google Drive!", icon="✅")
+                        st.rerun()
                         st.rerun()
                         st.cache_data.clear()
                         st.success(f"🎉 Đã lưu và cập nhật thành công thuốc **{hoat_chat_final}** lên Google Drive!")
