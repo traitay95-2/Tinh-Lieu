@@ -911,20 +911,20 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                     )
                     st.rerun()
             with col_del_all:
-            if selected_option != CREATE_NEW_OPTION:
-                if st.button(
-                    "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
-                ):
-                    with st.spinner(
-                        f"Đang xóa hoàn toàn thuốc {selected_option}..."
+                if selected_option != CREATE_NEW_OPTION:
+                    if st.button(
+                        "🗑️ XÓA HẲN THUỐC NÀY", type="secondary", use_container_width=True
                     ):
-                        # Xóa các file PDF liên quan trên Drive trước
-                        old_list = thuoc_bietduoc_dict.get(selected_option, [])
-                        for b in old_list:
-                            if b.get("link"):
-                                delete_file_from_drive(b["link"])
-                        # Xóa khỏi SQLite Database
-                        delete_thuoc_from_db(selected_option)
-                        st.cache_data.clear()
-                        st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
-                        st.rerun()
+                        with st.spinner(
+                            f"Đang xóa hoàn toàn thuốc {selected_option}..."
+                        ):
+                            # Xóa các file PDF liên quan trên Drive trước
+                            old_list = thuoc_bietduoc_dict.get(selected_option, [])
+                            for b in old_list:
+                                if b.get("link"):
+                                    delete_file_from_drive(b["link"])
+                            # Xóa khỏi SQLite Database
+                            delete_thuoc_from_db(selected_option)
+                            st.cache_data.clear()
+                            st.success(f"Đã xóa hoàn toàn thuốc **{selected_option}**!")
+                            st.rerun()
