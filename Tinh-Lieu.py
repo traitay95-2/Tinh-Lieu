@@ -37,9 +37,7 @@ def get_drive_service():
 
 def search_file_in_folder(service, filename, folder_id):
     """Tìm file theo tên trong FOLDER_ID cụ thể."""
-    query = (
-        f"'{folder_id}' in parents and name = '{filename}' and trashed = false"
-    )
+    query = f"'{folder_id}' in parents and name = '{filename}' and trashed = false"
     results = (
         service.files()
         .list(q=query, spaces="drive", fields="files(id, name)")
@@ -49,6 +47,8 @@ def search_file_in_folder(service, filename, folder_id):
     if items:
         return items[0]["id"]
     return None
+
+
 def extract_file_id_from_link(link):
     """Trích xuất file_id từ URL Google Drive link."""
     if not link:
@@ -163,7 +163,6 @@ def load_excel_data_from_drive_or_file(uploaded_file_bytes=None):
                     while not done:
                         _, done = downloader.next_chunk()
                     file_stream.seek(0)
-                    file_stream.close()
 
         if file_stream is None:
             return {}, {}, {}, {}, {}
@@ -204,6 +203,8 @@ def load_excel_data_from_drive_or_file(uploaded_file_bytes=None):
                     except Exception:
                         bd_list = [{"ten": biet_duoc_raw, "link": ""}]
                 thuoc_bietduoc_dict[key] = bd_list
+
+        file_stream.close()  # Đóng stream sau khi đọc xong workbook
 
         return (
             thuoc_dict,
@@ -246,9 +247,10 @@ else:
         thuoc_bietduoc_dict,
     ) = load_excel_data_from_drive_or_file(uploaded_file.getvalue())
     st.sidebar.success("🎉 Đã cập nhật dữ liệu từ file đính kèm!")
+
 with st.expander("💊 Danh sách 5 thuốc mới cập nhật bấm để xem", expanded=False):
     try:
-        service = get_drive_service()  # Đã khởi tạo service đúng cách
+        service = get_drive_service()
         results = (
             service.files()
             .list(
@@ -591,7 +593,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                 st.session_state.get("last_selected_option")
                 != CREATE_NEW_OPTION
             ):
-                reset_biet_duoc_widgets()  # Hàm đã được định nghĩa ở trên
+                reset_biet_duoc_widgets()
                 st.session_state["last_selected_option"] = CREATE_NEW_OPTION
                 st.session_state["edit_lieu_dung"] = ""
                 st.session_state["edit_quy_cach"] = ""
@@ -603,7 +605,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
         else:
             final_hoat_chat_name = selected_option
             if st.session_state.get("last_selected_option") != selected_option:
-                reset_biet_duoc_widgets()  # Hàm đã được định nghĩa ở trên
+                reset_biet_duoc_widgets()
                 st.session_state["last_selected_option"] = selected_option
                 st.session_state["edit_lieu_dung"] = thuoc_dict.get(
                     selected_option, ""
@@ -732,6 +734,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         wb = load_workbook(file_stream)
                         ws = wb.active
                         file_stream.close()
+
                         for r in range(1, ws.max_row + 1):
                             cell_val = ws.cell(row=r, column=1).value
                             if (
@@ -801,7 +804,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
 
         st.markdown("---")
 
-        # --- 4. NÚT LƯU DỮ LIỆU LÊN DRIVE ---
+        # --- 4. NÚT LƯU DỮ LIỆU LÊN DRIVE ---
         if st.button("💾 Lưu Toàn Bộ Dữ Liệu Lên Google Drive", type="primary"):
             hoat_chat_final = final_hoat_chat_name.strip()
 
@@ -854,74 +857,51 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                                 "link": link_to_use,
                             })
 
+                        # Đọc file Excel từ Drive để cập nhật
                         file_id = search_file_in_folder(
                             service, EXCEL_FILE_NAME, FOLDER_ID
                         )
+
                         if file_id:
                             request = service.files().get_media(fileId=file_id)
                             file_stream = io.BytesIO()
-                            downloader = MediaIoBaseDownload(
-                                file_stream, request
-                            )
+                            downloader = MediaIoBaseDownload(file_stream, request)
                             done = False
                             while not done:
                                 _, done = downloader.next_chunk()
                             file_stream.seek(0)
                             wb = load_workbook(file_stream)
+                            file_stream.close()
                         else:
                             wb = openpyxl.Workbook()
 
                         ws = wb.active
-                        file_stream.close()
+
+                        # Tìm dòng có chứa tên hoạt chất hoặc thêm vào dòng cuối
                         row_found = None
                         for r in range(1, ws.max_row + 1):
                             cell_val = ws.cell(row=r, column=1).value
-                            if (
-                                cell_val
-                                and str(cell_val).strip().lower()
-                                == hoat_chat_final.lower()
-                            ):
+                            if cell_val and str(cell_val).strip() == hoat_chat_final:
                                 row_found = r
                                 break
 
-                        if row_found is None:
-                            row_found = (
-                                ws.max_row + 1
-                                if ws.cell(row=1, column=1).value
-                                else 1
-                            )
+                        if not row_found:
+                            row_found = ws.max_row + 1 if ws.max_row > 1 or ws.cell(row=1, column=1).value else 1
 
+                        # Cập nhật các thông tin vào dòng Excel
                         ws.cell(row=row_found, column=1, value=hoat_chat_final)
-                        ws.cell(
-                            row=row_found,
-                            column=2,
-                            value=lieu_dung_input.strip(),
-                        )
-                        ws.cell(
-                            row=row_found, column=3, value=quy_cach_input.strip()
-                        )
-                        ws.cell(
-                            row=row_found, column=4, value=chi_dinh_input.strip()
-                        )
-                        ws.cell(
-                            row=row_found,
-                            column=5,
-                            value=chong_chi_dinh_input.strip(),
-                        )
-                        ws.cell(
-                            row=row_found,
-                            column=6,
-                            value=json.dumps(
-                                final_bd_json_data, ensure_ascii=False
-                            ),
-                        )
+                        ws.cell(row=row_found, column=2, value=lieu_dung_input.strip())
+                        ws.cell(row=row_found, column=3, value=quy_cach_input.strip())
+                        ws.cell(row=row_found, column=4, value=chi_dinh_input.strip())
+                        ws.cell(row=row_found, column=5, value=chong_chi_dinh_input.strip())
+                        ws.cell(row=row_found, column=6, value=json.dumps(final_bd_json_data, ensure_ascii=False))
 
+                        # Lưu file Excel lên Drive
                         save_excel_to_drive(service, wb)
+                        st.cache_data.clear()
 
-                        st.cache_data.clear()
-                        st.toast(f"🎉 Đã lưu và cập nhật thành công thuốc **{hoat_chat_final}** lên Google Drive!", icon="✅")
-                        st.rerun()
-                        st.rerun()
-                        st.cache_data.clear()
-                        st.success(f"🎉 Đã lưu và cập nhật thành công thuốc **{hoat_chat_final}** lên Google Drive!")
+                        st.toast(
+                            f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** lên Google Drive!",
+                            icon="✅"
+                        )
                         st.rerun()
