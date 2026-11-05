@@ -431,7 +431,7 @@ if chon_tab == "⚖️ Tính Liều Theo Cân Nặng":
                 tong_lieu_target = (
                     tong_lieu / 2 if is_lan_dung else tong_lieu
                 )
-                lieu_theo_tuoi = "tuổi" in lieu_chon.lower()
+                lieu_theo_tuoi = ("tuổi" in lieu_chon.lower()) or ("kg" not in lieu_chon.lower())
 
                 if not lieu_theo_tuoi:
                     st.metric(
