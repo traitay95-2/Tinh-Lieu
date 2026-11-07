@@ -9,11 +9,20 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 import streamlit as st
-import os
 import psutil
 import time
 
-# --- HIỂN THỊ TÀI NGUYÊN HỆ THỐNG TRÊN SIDEBAR ---
+# ====================================================================
+# CẤU HÌNH TRANG WEB STREAMLIT (PHẢI LÀ LỆNH STREAMLIT ĐẦU TIÊN)
+# ====================================================================
+st.set_page_config(
+    page_title="Công Cụ Tính Liều Thuốc - Minh Nhân Professional",
+    page_icon="🩺",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- HIỂN THỊ TÀI NGUYÊN HỆ THỐNG TRÊN SIDEBAR (ĐƯỢC ĐƯA XUỐNG DƯỚI) ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("📊 Tài nguyên Server")
 
