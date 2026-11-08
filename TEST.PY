@@ -33,7 +33,7 @@ SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 @st.cache_resource
 def init_supabase() -> Client:
     url = st.secrets["https://eaewsuwgttaayfsbvinj.supabase.co"]
-    key = st.secrets["sb_secret_O_p0aQjqMKxOsN8_3YvBGw_KW9qdIae"]
+    key = st.secrets["sb_secret_VNZYu7UykRid965PDWCEbg_RYpUMAVR"]
     return create_client(url, key)
 
 supabase = init_supabase()
