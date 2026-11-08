@@ -809,7 +809,10 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         )
 
                         st.cache_data.clear()
-                        st.success(f"🎉 Đã lưu thành công dữ liệu cho: **{hoat_chat_final}**!")
+                        st.toast(
+                            f"🎉 Đã lưu thành công thuốc **{hoat_chat_final}** vào Database!",
+                            icon="✅",
+                        )
                         st.rerun()
 
         with col_btn2:
