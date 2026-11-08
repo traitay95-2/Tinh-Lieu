@@ -663,6 +663,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                 return
 
             with st.spinner("Đang xóa biệt dược và đồng bộ dữ liệu..."):
+                # 👉 Đã khôi phục lệnh xóa file PDF trên Drive
                 if target_item.get("link"):
                     delete_file_from_drive(target_item["link"])
 
@@ -701,7 +702,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                     )
                     st.cache_data.clear()
 
-            st.toast("🗑️ Đã xóa biệt dược và đồng bộ Database!")
+            st.toast("🗑️ Đã xóa biệt dược và xóa file PDF trên Drive!")
             st.rerun()
 
         # Hiển thị danh sách biệt dược
@@ -818,8 +819,18 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
         with col_btn2:
             if selected_option != CREATE_NEW_OPTION and selected_option in danh_sach_thuoc:
                 if st.button("🗑️ Xóa Hoạt Chất Này", type="secondary", use_container_width=True):
-                    with st.spinner("Đang xóa hoạt chất khỏi cơ sở dữ liệu..."):
+                    with st.spinner("Đang xóa hoạt chất và các file PDF liên quan trên Drive..."):
+                        # 👉 Quét và xóa toàn bộ file PDF của các biệt dược thuộc hoạt chất này trên Drive
+                        old_bd_list = thuoc_bietduoc_dict.get(selected_option, [])
+                        for bd in old_bd_list:
+                            link_pdf = bd.get("link", "")
+                            if link_pdf:
+                                delete_file_from_drive(link_pdf)
+
+                        # Xóa dữ liệu trong bảng Supabase
                         delete_thuoc_from_db(selected_option)
                         st.cache_data.clear()
-                        st.success(f"Đã xóa hoạt chất **{selected_option}** thành công!")
+                        st.toast(
+                            f"Đã xóa hoạt chất **{selected_option}** và các file PDF liên quan thành công!"),
+                            icon="✅",
                         st.rerun()
