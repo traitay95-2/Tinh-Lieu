@@ -831,7 +831,7 @@ elif chon_tab == "➕ Thêm/Cập Nhật Dữ Liệu Thuốc":
                         delete_thuoc_from_db(selected_option)
                         st.cache_data.clear()
                         st.toast(
-                            f"Đã xóa hoạt chất **{selected_option}** và các file PDF liên quan thành công!),
+                            f"Đã xóa hoạt chất **{selected_option}** và các file PDF liên quan thành công!",
                             icon="✅",
                         )
                         st.rerun()
